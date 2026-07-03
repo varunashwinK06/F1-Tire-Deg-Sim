@@ -25,16 +25,23 @@ class F1DataExtractor:
         laps_df['LapTime_Seconds'] = laps_df['LapTime'].dt.total_seconds()
     
 
-        target_columns = ["LapNumber", "Stint", "Compound", "TyreLife", "LapTime_Seconds"]
+        target_columns = ["LapNumber", "Compound", "LapTime_Seconds"]
         
+        tyre_map_dict={
+            'SOFT': 0, 
+            'MEDIUM': 1,
+            'HARD': 2,
+            'INTERMEDIATE': 3,
+            'WET': 4
+        }
         result_df = laps_df[target_columns].astype({
             'LapNumber': 'int',
-            'Stint': 'int',
             'Compound': 'str',
-            'TyreLife': 'int',
             'LapTime_Seconds': 'float'
         })
+        result_df['Compound']= result_df['Compound'].map(tyre_map_dict)
         return result_df 
+    
     
 
 
