@@ -33,8 +33,9 @@ class RacePaceFormulator:
         thermal_deg_delta= fuel_adjusted_delta-exponential_wear
         real_stints['thermal_deg_rate'] = thermal_deg_delta / (real_stints['total_laps'] - 1)
         real_stints['fuel_loss'] = 0.035
+        real_stints['base_time'] = real_stints['first_lap_time']
 
-        summary_columns = ['compound', 'multipliers', 'thermal_deg_rate', 'fuel_loss']
+        summary_columns = ['compound', 'multipliers', 'thermal_deg_rate', 'fuel_loss', 'base_time']
         return real_stints[summary_columns].reset_index()
 
     def calculate_fitted_deg_rate(self, fuel_loss: float = 0.035) -> pd.DataFrame:
