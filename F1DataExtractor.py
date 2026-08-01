@@ -8,11 +8,11 @@ class F1DataExtractor:
         self.cache_dir = cache_dir 
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
-        fastf1.Cache.set_cache_dir(self.cache_dir)
+        fastf1.Cache.enable_cache(self.cache_dir)
         self.session = None
     def load_session(self, year: int, weekend: str,session: str) -> bool:
         self.session = fastf1.get_session(year, weekend, session)
-        self.session.load(weather=True, telemetry=False, laps=True, messages=False)
+        self.session.load(weather=True, telemetry=True, laps=True, messages=False)
         return True
     def get_driver_session(self, driver: str) -> pd.DataFrame:
         if not self.session:
@@ -25,21 +25,15 @@ class F1DataExtractor:
         laps_df['LapTime_Seconds'] = laps_df['LapTime'].dt.total_seconds()
     
 
-        target_columns = ["LapNumber", "Compound", "LapTime_Seconds"]
+        target_columns = ["LapNumber", "Compound", "LapTime_Seconds", "Stint"]
         
-        tyre_map_dict={
-            'SOFT': 0, 
-            'MEDIUM': 1,
-            'HARD': 2,
-            'INTERMEDIATE': 3,
-            'WET': 4
-        }
         result_df = laps_df[target_columns].astype({
             'LapNumber': 'int',
             'Compound': 'str',
-            'LapTime_Seconds': 'float'
+            'LapTime_Seconds': 'float',
+            'Stint': 'int'
         })
-        result_df['Compound']= result_df['Compound'].map(tyre_map_dict)
+        
         return result_df 
     
     
