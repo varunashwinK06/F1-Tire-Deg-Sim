@@ -1,8 +1,6 @@
-import F1DataExtractor 
-import RacePaceFormulator 
 import pandas as pd
 import numpy as np
-import matplotlib as plt
+
 
 class MonteCarloSimulator:
     def __init__(self, noise_range: float = 0.5, seed: int = 42):
