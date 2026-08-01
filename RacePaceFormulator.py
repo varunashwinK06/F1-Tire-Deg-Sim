@@ -1,4 +1,4 @@
-import pandas as pd  # type: ignore[import-not-found]
+import pandas as pd  
 import numpy as np
 
 
