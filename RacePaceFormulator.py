@@ -43,7 +43,7 @@ class RacePaceFormulator:
         if real_stints.empty:
             print("No stints with more than one lap found.")
             return pd.DataFrame()
-        base_times, deg_rates, deg_curvatures = [], [], []
+        base_times, deg_rates, deg_curvatures, pcovs = [], [], [], []
 
         for stint_id in real_stints.index:
             stint_laps = self.raw_data[self.raw_data['Stint'] == stint_id]
@@ -53,18 +53,30 @@ class RacePaceFormulator:
 
            
             X = np.column_stack([np.ones_like(laps), laps, laps ** 2])
-            coeffs, *_ = np.linalg.lstsq(X, fuel_corrected, rcond=None)
+            coeffs, residuals, rank, _ = np.linalg.lstsq(X, fuel_corrected, rcond=None)
+            n_obs, n_params = X.shape
+            dof=n_obs - n_params
+            if dof>0:
+                fitted_vals = X @ coeffs
+                rss = np.sum((fuel_corrected - fitted_vals) ** 2)
+                sigma_sq = rss / dof
+                pcov = sigma_sq * np.linalg.inv(X.T @ X)
+            else:
+                pcov = np.zeros((n_params, n_params))
+            
 
             base_times.append(coeffs[0])
             deg_rates.append(coeffs[1])
             deg_curvatures.append(coeffs[2])
+            pcovs.append(pcov)
 
         real_stints['base_time'] = base_times
         real_stints['deg_rate'] = deg_rates
         real_stints['deg_curvature'] = deg_curvatures
         real_stints['fuel_loss'] = fuel_loss
+        real_stints['pcov'] = pcovs
 
-        summary_columns = ['compound', 'base_time', 'deg_rate', 'deg_curvature', 'fuel_loss']
+        summary_columns = ['compound', 'base_time', 'deg_rate', 'deg_curvature', 'fuel_loss', 'pcov']
         return real_stints[summary_columns].reset_index()
         
         
