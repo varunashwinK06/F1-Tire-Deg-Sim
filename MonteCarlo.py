@@ -26,9 +26,34 @@ class MonteCarloSimulator:
         else:
             raise ValueError(f"Unknown model_type: {model_type}. Use 'naive' or 'fitted'.")
     def simulate_stint(self, model_type: str, params: dict, n_laps: int, sim_size: int) -> np.ndarray:
-        base_signal = self._build_base_model(model_type, params, n_laps)
+        base_signal = self.build_base_model(model_type, params, n_laps)
         noise_matrix = self.generate_gaussian_noise(n_laps, sim_size)
         return base_signal[:, None] + noise_matrix
+    def simulate_stint_covariance(self, params: dict, n_laps: int, sim_size: int) -> np.ndarray:
+        pcov = params['pcov']  
+        mean_coeffs = np.array([params['base_time'], params['deg_rate'], params['deg_curvature']])
+        fuel_loss = params['fuel_loss']
+
+        try:
+            L = np.linalg.cholesky(pcov)
+        except np.linalg.LinAlgError:
+            L = np.zeros_like(pcov)
+
+        z = self.rng.standard_normal(size=(3, sim_size))          # (3, sim_size)
+        sampled_coeffs = mean_coeffs[:, None] + L @ z              # (3, sim_size)
+
+        laps = np.arange(1, n_laps + 1, dtype=float) - 1           # laps-1, consistent with build_base_model
+        base_t = sampled_coeffs[0, :]
+        deg_r = sampled_coeffs[1, :]
+        deg_c = sampled_coeffs[2, :]
+
+        simulated = (
+            base_t[None, :]
+            + deg_r[None, :] * laps[:, None]
+            + deg_c[None, :] * (laps[:, None] ** 2)
+            - fuel_loss * laps[:, None]
+        )
+        return simulated
     
         
         
