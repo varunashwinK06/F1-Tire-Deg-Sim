@@ -33,6 +33,7 @@ class MonteCarloSimulator:
         pcov = params['pcov']  
         mean_coeffs = np.array([params['base_time'], params['deg_rate'], params['deg_curvature']])
         fuel_loss = params['fuel_loss']
+        sigma=params['sigma']
 
         try:
             L = np.linalg.cholesky(pcov)
@@ -53,7 +54,10 @@ class MonteCarloSimulator:
             + deg_c[None, :] * (laps[:, None] ** 2)
             - fuel_loss * laps[:, None]
         )
-        return simulated
+
+        gaussian_noise = self.generate_gaussian_noise(n_laps, sim_size) * (sigma/self.noise_range)
+        return simulated+gaussian_noise
+    
     
         
         
