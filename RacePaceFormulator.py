@@ -12,6 +12,8 @@ class RacePaceFormulator:
         )
         self.raw_data=result_df.sort_values(['Stint', 'LapNumber']).copy()
     def calculate_naive_deg_rate(self) -> pd.DataFrame:
+        # Disconnecting this method from the MonteCarlo class because it is arbitrary
+        # and does not provide a useful baseline. Additionally causes matrix addition issues due to its single row shape.
         real_stints=self.result_df[self.result_df['total_laps']>1].copy()
         if real_stints.empty:
             print("No stints with more than one lap found.")

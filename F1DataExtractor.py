@@ -1,6 +1,5 @@
 import pandas as pd 
 import fastf1  
-import numpy as np
 import os
 
 class F1DataExtractor:
