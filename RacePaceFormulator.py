@@ -49,9 +49,11 @@ class RacePaceFormulator:
 
         for stint_id in real_stints.index:
             stint_laps = self.raw_data[self.raw_data['Stint'] == stint_id]
-            laps = stint_laps['LapNumber'].to_numpy(dtype=float)
+            laps_absolute = stint_laps['LapNumber'].to_numpy(dtype=float)
+            laps = laps_absolute - laps_absolute.min()
             laptimes = stint_laps['LapTime_Seconds'].to_numpy(dtype=float)
             fuel_corrected = laptimes + fuel_loss * laps
+
 
            
             X = np.column_stack([np.ones_like(laps), laps, laps ** 2])
