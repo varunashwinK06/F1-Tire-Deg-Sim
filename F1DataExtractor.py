@@ -18,6 +18,7 @@ class F1DataExtractor:
             raise ValueError("No session available")
         laps_df = self.session.laps.pick_driver(driver).copy()
         laps_df = laps_df.pick_quicklaps()
+        #pick quicklaps gets rid of slow laps, pit laps, VSC/SC and other irregularities.
         if laps_df.empty:
             print(f"No lap data found for driver: {driver}")
             return pd.DataFrame()

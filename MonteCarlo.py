@@ -20,16 +20,15 @@ class MonteCarloSimulator:
         except np.linalg.LinAlgError:
             L = np.zeros_like(pcov)
 
-        z = self.rng.standard_normal(size=(3, sim_size))          # (3, sim_size)
-        sampled_coeffs = mean_coeffs[:, None] + L @ z              # (3, sim_size)
+        z = self.rng.standard_normal(size=(3, sim_size))          
+        sampled_coeffs = mean_coeffs[:, None] + L @ z              
 
-        laps = np.arange(1, n_laps + 1, dtype=float) - 1           # laps-1, consistent with build_base_model
-        base_t = sampled_coeffs[0, :]
+        laps = np.arange(1, n_laps + 1, dtype=float) - 1           
         deg_r = sampled_coeffs[1, :]
         deg_c = sampled_coeffs[2, :]
 
         simulated = (
-            base_t[None, :]
+            sampled_coeffs[0, None]
             + deg_r[None, :] * laps[:, None]
             + deg_c[None, :] * (laps[:, None] ** 2)
             - fuel_loss * laps[:, None]
