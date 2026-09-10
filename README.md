@@ -4,23 +4,23 @@ A python program that uses FastF1 API to extract real race data, fitting stints 
 ## Class Structures
 
 
-F1DataExtractor: Uses fastF1 to pull real data and caches data to reduce subsequent load times. Cleans data to remove VSC/SC/In/Out laps, and fixes typing for columns such as la- Rtime.
+F1DataExtractor: Uses fastF1 to pull real data and caches data to reduce subsequent load times. Cleans data to remove VSC/SC/In/Out laps, and fixes typing for columns such as laptime.
 
-RacePaceFormulator: Fits race data to either an OLS fitted model, or a naive model which uses net delta over a - stint.
+RacePaceFormulator: Fits race data to either an OLS fitted model, or a naive model which uses net delta over a stint.
 
-MonteCarloSimulator: Generates a Gaussian noise matrix and simulates a set number of stints using inputs from RacePaceFormul- ator. 
+MonteCarloSimulator: Generates a Gaussian noise matrix and simulates a set number of stints using inputs from RacePaceFormulator. 
 
 UnitTests: Unit tests that test basic functionality and edge cases such as minimum stints that can be passed into the model (n_lap- s>=3).
 
-model_testing: A script to run the model for a specific race stint, and plot it with Matplotlib to run quick visual sanity checks to ensure baseline correct model behavior
+model_testing: A script to run the model for a specific race stint, and plot it with Matplotlib to run quick visual sanity checks to ensure baseline correct model behavior.
 ## Methodology
 
 __Naive Model (Deprecated)__
 - Each compound is arbitrarily assigned a constant multiplier value for material deg.  
-- Fuel loss is added to the net delta (last lap-first lap) in a stint. The multiplier taken to the number of laps is subtracted as well, yielding a final delta which is divided by n_laps to find the thermal deg rate/
--Model was deprecated since the constants are assigned arbitrarily on no logical basis. Using the delta can also produce odd results, as early laps in stints are generally more likely to have slow outlier laps due to driver conflict or cold tires. In general, this model was intended as a scaffolding upon which more complex ideas could be structured.- _ OLS 
+- Fuel loss is added to the net delta (last lap-first lap) in a stint. The multiplier taken to the number of laps is subtracted as well, yielding a final delta which is divided by n_laps to find the thermal deg rate.
+-Model was deprecated since the constants are assigned arbitrarily on no logical basis. Using the delta can also produce odd results, as early laps in stints are generally more likely to have slow outlier laps due to driver conflict or cold tires. In general, this model was intended as a scaffolding upon which more complex ideas could be structured.
 
-__Fitted Model__
+__OLS Fitted Model__
 
  
 -  In this model the fuel loss is again initially added to each lap to focus on tire degradation.- Laptimes are fit the the following equation: y=an + bn^2 + c. Where y is laptime, and there are linear and quadratic terms representing thermal and material degradation. Using NumPy lstsq, the laptimes are fit to this equation using a standard OLS fit and constants a, b, and c are fit to minimize deviation from the model. - If the dof>0 whihch is true when n_laps>=3, the residual sum of squares is divided by the degrees of freedom to sigma_sq and subsequently, sigma, which is the standard error.
