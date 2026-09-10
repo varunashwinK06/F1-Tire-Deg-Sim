@@ -16,13 +16,13 @@ class F1DataExtractor:
     def get_driver_session(self, driver: str) -> pd.DataFrame:
         if not self.session:
             raise ValueError("No session available")
-        laps_df = self.session.laps.pick_driver(driver).copy()
+        laps_df = self.session.laps.pick_drivers(driver).copy()
         laps_df = laps_df.pick_quicklaps()
         #pick quicklaps gets rid of slow laps, pit laps, VSC/SC and other irregularities.
         if laps_df.empty:
             print(f"No lap data found for driver: {driver}")
             return pd.DataFrame()
-        laps_df['LapTime_Seconds'] = laps_df['LapTime'].dt.total_seconds()
+        laps_df = laps_df.assign(LapTime_Seconds=laps_df['LapTime'].dt.total_seconds())
     
 
         target_columns = ["LapNumber", "Compound", "LapTime_Seconds", "Stint"]
