@@ -29,5 +29,11 @@ __Gaussian Noise Generation and Monte Carlo Simulation__
  - Both the naive model and fitted model rely on a Gaussian noise matrix to simulate random race events, although they are scaled differently.
  - In the OLS fitted model, the noise matrix is scaled by the standard error, whereas in the naive model it is scaled arbitrarily. The OLS method is preferred as it estimates the realistic amount of unexplained laptime variance.
 
+__Initial Results__
+ - When testing the model on a sample of 10 races from PIA's 2023 season, there were significant instances of the model's 95% confidence interval not capturing the real race results. In particular there were many races where PIA's pace hardly varied throughout a stint, essentially making it appear that there was no tire degradation at all.
+ - The OLS fit tends to aggresively project any trends it sees in the initial laps, leading to unrealistic model predictions of pace improving throughout a stint, or of pace aggresively dropping off based on small upwards trends.
+ - Drivers tend to try and manage their pace to intentionally prevent their pace from dropping off as per the non linear tyre degradation equation. This could potentially explain massive divergence between predictions and real results.
+
+
 
 
