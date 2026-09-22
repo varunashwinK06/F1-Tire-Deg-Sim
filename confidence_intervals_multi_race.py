@@ -24,7 +24,7 @@ RACES = [
     "Japanese Grand Prix",
 ]
 
-PARTIAL_LAPS = 5          # laps of partial data used to fit the model
+PARTIAL_LAPS = 8         # laps of partial data used to fit the model
 TARGET_LAPS = 20          # full-stint length we extrapolate to
 MIN_STINT_LAPS = PARTIAL_LAPS + 3  # need >= 3 clean laps left to test extrapolation
 SIM_SIZE = 1000
@@ -37,12 +37,6 @@ OUTPUT_BIAS_PLOT = "bias_analysis.png"
 
 
 def fit_from_partial_stint(stint_df: pd.DataFrame, partial_laps: int):
-    """
-    Fit the quadratic degradation model using all cleaned laps with
-    stint-relative index < partial_laps (i.e. the first `partial_laps`
-    in-stint laps). Using LapNumber-based relative indexing keeps alignment
-    correct even when pick_quicklaps() removed laps from the stint.
-    """
     stint_rel = stint_df["LapNumber"].to_numpy() - stint_df["LapNumber"].min()
     partial_df = stint_df[stint_rel < partial_laps]
     formulator = RacePaceFormulator(partial_df)
@@ -62,32 +56,23 @@ def fit_from_partial_stint(stint_df: pd.DataFrame, partial_laps: int):
 
 
 def simulate_stint(params: dict, n_laps: int, sim_size: int, seed: int):
-    """
-    Monte-Carlo simulate n_laps for sim_size stints.
-    Returns (simulated, model_mean, lower, upper) where model_mean/lower/upper
-    are per-lap arrays (length n_laps).
-    """
+   
     mc = MonteCarloSimulator(seed=seed)
     simulated = mc.simulate_stint_from_covariance(params, n_laps, sim_size)
-    # simulated shape: (n_laps, sim_size)
-    # SEMANTIC FIX: percentile across simulations (axis=1), NOT across laps.
     model_mean = simulated.mean(axis=1)
     lower, upper = np.percentile(simulated, [2.5, 97.5], axis=1)
     return simulated, model_mean, lower, upper
 
 
 def analyze_race(extractor: F1DataExtractor, year: int, weekend: str, driver: str):
-    """Full pipeline for one race. Returns (result_dict, error_str)."""
     extractor.load_session(year, weekend, SESSION)
     driver_df = extractor.get_driver_session(driver)
     if driver_df.empty:
         return None, f"No lap data for {driver} at {weekend} {year}"
-
-    # ---- select the longest stint that leaves extrapolation room ----
     stint_sizes = driver_df.groupby("Stint").size()
     candidates = stint_sizes[stint_sizes >= MIN_STINT_LAPS]
     if candidates.empty:
-        return None, f"No stint with >= {MIN_STINT_LAPS} laps at {weekend} {year}"
+        return None, f"No stint with >= {MIN_STINT_LAPS} laps for {driver} at {weekend} {year}"
 
     stint_id = int(candidates.idxmax())
     stint_df = (
@@ -96,28 +81,17 @@ def analyze_race(extractor: F1DataExtractor, year: int, weekend: str, driver: st
         .reset_index(drop=True)
     )
     compound = stint_df["Compound"].iloc[0]
-
-    # ---- stint-relative lap index (0-based). pick_quicklaps() may have
-    # removed laps (pit/VSC/SC), so LapNumber can have gaps; all alignment
-    # is done through this relative index, never via row position. ----
     stint_rel = stint_df["LapNumber"].to_numpy(dtype=int) - stint_df["LapNumber"].min()
     real_laps = stint_df["LapTime_Seconds"].to_numpy(dtype=float)
-
-    # ---- fit on partial data only (stint-relative index < PARTIAL_LAPS) ----
     fit_row, params = fit_from_partial_stint(stint_df, PARTIAL_LAPS)
     if fit_row is None:
         return None, f"Fit failed for stint {stint_id} at {weekend} {year}"
-
-    # ---- extrapolate to a full TARGET_LAPS stint via Monte-Carlo ----
+    
     simulated, model_mean, lower, upper = simulate_stint(
         params, TARGET_LAPS, SIM_SIZE, SEED
     )
-
-    # ---- extrapolation window: real laps beyond the partial-fit window,
-    # clipped at the 20-lap extrapolation horizon ----
     in_extrap = (stint_rel >= PARTIAL_LAPS) & (stint_rel < TARGET_LAPS)
     ext_idx = np.where(in_extrap)[0]  # row positions into stint_df
-
     real_ext = real_laps[ext_idx]
     rel_ext = stint_rel[ext_idx]
     mean_ext = model_mean[rel_ext]
@@ -156,9 +130,6 @@ def analyze_race(extractor: F1DataExtractor, year: int, weekend: str, driver: st
             ((real_ext >= lower_ext) & (real_ext <= upper_ext)).mean() * 100
         ),
     }, None
-
-
-# ===================== PLOTTING =====================
 
 
 def plot_prediction_vs_real(results: list):
@@ -245,25 +216,14 @@ def plot_bias_analysis(results: list):
     plt.close(fig)
     print(f"Saved plot: {OUTPUT_BIAS_PLOT}")
 
-
-# ===================== MAIN =====================
-
-
-def main():
-    print(f"Analyzing {len(RACES)} races for {DRIVER} ({YEAR} {SESSION})")
-    print(
-        f"Partial-fit laps: {PARTIAL_LAPS} | Target stint: {TARGET_LAPS} laps | "
-        f"Simulations: {SIM_SIZE} | Min stint laps: {MIN_STINT_LAPS}"
-    )
-
+def main():    
     extractor = F1DataExtractor()
     results, failures = [], []
 
     for weekend in RACES:
-        print(f"\n--- {weekend} {YEAR} ---")
         try:
             result, err = analyze_race(extractor, YEAR, weekend, DRIVER)
-        except Exception as e:  # noqa: BLE001 - surface any FastF1/network error
+        except Exception as e:  
             failures.append((weekend, str(e)))
             print(f"  ERROR: {e}")
             continue
@@ -287,8 +247,6 @@ def main():
             f"{result['pct_below_ci']:.1f}% below, "
             f"{result['pct_within_ci']:.1f}% within"
         )
-
-    # ---------- aggregate results ----------
     print("\n" + "=" * 90)
     print("AGGREGATE RESULTS")
     print("=" * 90)
@@ -318,7 +276,7 @@ def main():
         n_above = int((all_residuals > 0).sum())
         n_below = int((all_residuals < 0).sum())
 
-        # Proper within-CI count across all extrapolated laps
+    
         within_count = 0
         total_extrap = 0
         for r in results:
@@ -342,7 +300,6 @@ def main():
         for w, e in failures:
             print(f"  - {w}: {e}")
 
-    # ---------- plots ----------
     if results:
         plot_prediction_vs_real(results)
         plot_bias_analysis(results)
