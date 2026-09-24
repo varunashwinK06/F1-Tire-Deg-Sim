@@ -29,10 +29,15 @@ __Gaussian Noise Generation and Monte Carlo Simulation__
  - Both the naive model and fitted model rely on a Gaussian noise matrix to simulate random race events, although they are scaled differently.
  - In the OLS fitted model, the noise matrix is scaled by the standard error, whereas in the naive model it is scaled arbitrarily. The OLS method is preferred as it estimates the realistic amount of unexplained laptime variance.
 
-__Initial Results__
+__Initial Results (see bias_analysis.png)__
  - When testing the model on a sample of 10 races from PIA's 2023 season, there were significant instances of the model's 95% confidence interval not capturing the real race results. In particular there were many races where PIA's pace hardly varied throughout a stint, essentially making it appear that there was no tire degradation at all.
- - The OLS fit tends to aggresively project any trends it sees in the initial laps, leading to unrealistic model predictions of pace improving throughout a stint, or of pace aggresively dropping off based on small upwards trends.
- - Drivers tend to try and manage their pace to intentionally prevent their pace from dropping off as per the non linear tyre degradation equation. This could potentially explain massive divergence between predictions and real results.
+ - The OLS fit tends to aggressively project any trends it sees in the initial laps, leading to unrealistic model predictions of pace improving throughout a stint, or of pace aggressively dropping off based on small upwards trends.
+ - The cases where the real data is linear exposes one of the frustrating realities of the limitations of modelling F1 tyre deg. The teams have access to the real physics of how a Pirelli tire degrades under the aerodynamic and structural load of their car and intentionally manage their drivers pace in a way that keeps lap time consistent to preserve strategic options. This means that modelling tire deg on non-proprietary information like lap time in races ignores the reality of how these lap times come about.
+
+__Possible Fixes__
+ - The last bullet in the Results section flagged a variety of issues in the nature of the modelling techniques used and in the nature of the project purpose itself.
+ - Fixing the issue of pace increasing aggressively is possible by establishing lower bounds on the simulation, although determining what factors determine the bound is a key issue since shorter stints can have downward trends and longer stints can have dips before the tyre degradation fully inhibits performance.
+ - The idea of drivers managing their pace is more problematic. A possible solution would be to compare early laps in a stint to push laps in free practice, although this now introduces previously unaccounted for variables, like weather differences between days and significant track evolution between sessions. Additionally, teams tend to run lower engine modes in practice to preserve their power unit. In combining all these factors, the initial read that this is just a limitation of modelling F1 data may be a fair conclusion. Repurposing this model  for another purpose by changing the input equations for the OLS fit, and applying it to something such as stock trajectory may be a more robust test of the model function since F1 is secretive by nature whereas public company shares are intended to have publicly disclosed prices and are constrained by SEC regulations even if the firms trading the majority of the volume operate on proprietary strategy.
 
 
 
